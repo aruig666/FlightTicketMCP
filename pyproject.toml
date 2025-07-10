@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flight-ticket-mcp-server"
+version = "1.0.0"
+description = "一个基于模型上下文协议(MCP)的航空机票预订和管理服务器"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+keywords = ["mcp", "flight", "ticket", "booking", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "fastmcp>=2.8.0",
+    "pydantic>=2.0.0",
+    "requests>=2.31.0",
+    "python-dateutil>=2.8.0",
+    "pytz>=2023.3",
+    "uvicorn>=0.23.0",
+    "fastapi>=0.100.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/flight-ticket-mcp-server"
+Repository = "https://github.com/yourusername/flight-ticket-mcp-server"
+Documentation = "https://github.com/yourusername/flight-ticket-mcp-server#readme"
+Issues = "https://github.com/yourusername/flight-ticket-mcp-server/issues"
+
+[project.scripts]
+flight-ticket-server = "flight_ticket_server.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["flight_ticket_server*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true 

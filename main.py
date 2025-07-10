@@ -1,0 +1,301 @@
+"""
+Main entry point for the Flight Ticket MCP Server.
+Acts as the central controller for the MCP server that handles flight ticket operations.
+Supports multiple transports: stdio, sse, and streamable-http using standalone FastMCP.
+"""
+
+import os
+import sys
+# Set required environment variable for FastMCP 2.8.1+
+os.environ.setdefault('FASTMCP_LOG_LEVEL', 'INFO')
+
+
+def load_env_file(env_file_path='.env'):
+    """
+    Load environment variables from .env file if it exists.
+    
+    Args:
+        env_file_path (str): Path to the .env file
+    """
+    if os.path.exists(env_file_path):
+        print(f"Loading environment variables from {env_file_path}")
+        with open(env_file_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                # Skip empty lines and comments
+                if not line or line.startswith('#'):
+                    continue
+                # Parse key=value pairs
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    # Only set if not already set
+                    if key not in os.environ:
+                        os.environ[key] = value
+        print("Environment variables loaded successfully")
+    else:
+        print(f"No .env file found at {env_file_path}, using system environment variables")
+
+
+# Load environment variables from .env file
+load_env_file()
+
+from fastmcp import FastMCP
+from tools import flight_search_tools
+
+
+def get_transport_config():
+    """
+    Get transport configuration from environment variables.
+    
+    Returns:
+        dict: Transport configuration with type, host, port, and other settings
+    """
+    # Default configuration
+    config = {
+        'transport': 'stdio',  # Default to stdio for backward compatibility
+        'host': '127.0.0.1',
+        'port': 8000,
+        'path': '/mcp',
+        'sse_path': '/sse'
+    }
+    
+    # Override with environment variables if provided
+    transport = os.getenv('MCP_TRANSPORT', 'stdio').lower()
+    print(f"Transport: {transport}")
+    
+    # Validate transport type - 更新有效的传输协议列表
+    valid_transports = ['stdio', 'sse', 'http', 'streamable-http']
+    if transport not in valid_transports:
+        print(f"Warning: Invalid transport '{transport}'. Falling back to 'stdio'.")
+        transport = 'stdio'
+    
+    # 规范化传输协议名称
+    if transport == 'streamable-http':
+        transport = 'streamable-http'  # 保持原名称用于显示
+    
+    config['transport'] = transport
+    config['host'] = os.getenv('MCP_HOST', config['host'])
+    config['port'] = int(os.getenv('MCP_PORT', config['port']))
+    config['path'] = os.getenv('MCP_PATH', config['path'])
+    config['sse_path'] = os.getenv('MCP_SSE_PATH', config['sse_path'])
+    
+    return config
+
+
+def setup_logging(debug_mode):
+    """
+    Setup logging based on debug mode and environment variables.
+    
+    Args:
+        debug_mode (bool): Whether to enable debug logging
+    """
+    import logging
+    import logging.handlers
+    import os
+    from datetime import datetime
+    
+    # 从环境变量获取配置
+    log_level_str = os.getenv('LOG_LEVEL', 'INFO').upper()
+    log_file_path = os.getenv('LOG_FILE_PATH', 'logs/flight_server.log')
+    log_error_file_path = os.getenv('LOG_ERROR_FILE_PATH', 'logs/flight_server_error.log')
+    log_debug_file_path = os.getenv('LOG_DEBUG_FILE_PATH', 'logs/flight_server_debug.log')
+    log_max_size = int(os.getenv('LOG_MAX_SIZE', '10')) * 1024 * 1024  # Convert MB to bytes
+    log_backup_count = int(os.getenv('LOG_BACKUP_COUNT', '5'))
+    
+    # 创建logs目录
+    log_dir = os.path.dirname(log_file_path)
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+    
+    # 设置日志级别
+    log_level_map = {
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL
+    }
+    log_level = log_level_map.get(log_level_str, logging.INFO)
+    
+    # 如果debug_mode为True，覆盖为DEBUG级别
+    if debug_mode:
+        log_level = logging.DEBUG
+    
+    # 创建根logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    
+    # 清除现有handlers
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
+    # 日志格式
+    detailed_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    )
+    simple_formatter = logging.Formatter(
+        '%(asctime)s - %(levelname)s - %(message)s'
+    )
+    
+    # 控制台处理器
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(simple_formatter if not debug_mode else detailed_formatter)
+    root_logger.addHandler(console_handler)
+    
+    # 文件处理器 - 一般日志
+    info_file_handler = logging.handlers.RotatingFileHandler(
+        log_file_path,
+        maxBytes=log_max_size,
+        backupCount=log_backup_count,
+        encoding='utf-8'
+    )
+    info_file_handler.setLevel(logging.INFO)
+    info_file_handler.setFormatter(detailed_formatter)
+    root_logger.addHandler(info_file_handler)
+    
+    # 错误日志文件处理器
+    error_file_handler = logging.handlers.RotatingFileHandler(
+        log_error_file_path,
+        maxBytes=log_max_size,
+        backupCount=max(1, log_backup_count - 2),  # 错误日志保留较少备份
+        encoding='utf-8'
+    )
+    error_file_handler.setLevel(logging.ERROR)
+    error_file_handler.setFormatter(detailed_formatter)
+    root_logger.addHandler(error_file_handler)
+    
+    # 调试模式下的额外配置
+    if debug_mode or log_level == logging.DEBUG:
+        debug_file_handler = logging.handlers.RotatingFileHandler(
+            log_debug_file_path,
+            maxBytes=log_max_size * 5,  # 调试日志文件更大
+            backupCount=max(1, log_backup_count - 3),  # 调试日志保留更少备份
+            encoding='utf-8'
+        )
+        debug_file_handler.setLevel(logging.DEBUG)
+        debug_file_handler.setFormatter(detailed_formatter)
+        root_logger.addHandler(debug_file_handler)
+        
+        print(f"Debug logging enabled - logs will be saved to {log_dir}/ directory")
+    else:
+        print(f"Logging enabled - logs will be saved to {log_dir}/ directory")
+    
+    # 为项目模块设置特定的日志级别
+    project_logger = logging.getLogger('tools')
+    project_logger.setLevel(log_level)
+    
+    # 记录启动信息
+    logging.info(f"Flight Ticket MCP Server logging initialized - Level: {log_level_str}, Debug: {debug_mode}")
+    logging.info(f"Log files location: {os.path.abspath(log_dir)}")
+    logging.info(f"Log configuration - Max size: {log_max_size//1024//1024}MB, Backup count: {log_backup_count}")
+
+
+# Initialize FastMCP server
+mcp = FastMCP("Flight Ticket Server")
+
+
+def register_tools():
+    """Register all tools with the MCP server using FastMCP decorators."""
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info("开始注册MCP工具...")
+    
+    # Flight real-time dynamics search tool
+    @mcp.tool()
+    def searchFlightsByNumber(fnum: str, date: str):
+        """航班实时动态查询 - 根据航班号及航班起飞日期查询航班详细信息和实时动态"""
+        logger.debug(f"调用航班查询工具: fnum={fnum}, date={date}")
+        return flight_search_tools.searchFlightsByNumber(fnum, date)
+    
+    logger.info("MCP工具注册完成 - 已注册工具: searchFlightsByNumber")
+
+
+def run_server():
+    """
+    Run the Flight Ticket MCP server.
+    
+    This function sets up the server configuration, registers all tools,
+    and starts the server with the specified transport method.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Get configuration
+        config = get_transport_config()
+        logger.info(f"服务器配置加载完成: {config}")
+        
+        # Setup logging
+        debug_mode = os.getenv('MCP_DEBUG', 'false').lower() in ('true', '1', 'yes')
+        setup_logging(debug_mode)
+        
+        print("Flight Ticket MCP Server starting...")
+        print(f"Transport: {config['transport']}")
+        logger.info(f"Flight Ticket MCP Server 启动中... 传输协议: {config['transport']}")
+        
+        # Register all tools
+        register_tools()
+        print("All tools registered successfully")
+        logger.info("所有工具注册成功")
+        
+        # Start server based on transport type
+        if config['transport'] == 'stdio':
+            print("Starting stdio transport...")
+            logger.info("启动stdio传输协议...")
+            mcp.run()
+        elif config['transport'] == 'sse':
+            print(f"Starting SSE transport on {config['host']}:{config['port']}{config['sse_path']}")
+            logger.info(f"启动SSE传输协议: {config['host']}:{config['port']}{config['sse_path']}")
+            # 使用正确的FastMCP SSE启动方法
+            mcp.run(
+                transport="sse",
+                host=config['host'],
+                port=config['port'],
+                path=config['sse_path']
+            )
+        elif config['transport'] == 'streamable-http':
+            print(f"Starting HTTP transport on {config['host']}:{config['port']}{config['path']}")
+            logger.info(f"启动HTTP传输协议: {config['host']}:{config['port']}{config['path']}")
+            # 使用正确的FastMCP HTTP启动方法
+            mcp.run(
+                transport="http",
+                host=config['host'],
+                port=config['port'],
+                path=config['path']
+            )
+        else:
+            error_msg = f"Unsupported transport: {config['transport']}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+            
+    except KeyboardInterrupt:
+        print("\nShutting down Flight Ticket MCP Server...")
+        logger.info("用户中断，正在关闭Flight Ticket MCP Server...")
+    except Exception as e:
+        error_msg = f"Error starting server: {e}"
+        print(error_msg)
+        logger.error(f"服务器启动失败: {e}", exc_info=True)
+        sys.exit(1)
+
+
+def main():
+    """Main entry point for the application."""
+    try:
+        run_server()
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main() 
