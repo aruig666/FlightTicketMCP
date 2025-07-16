@@ -48,6 +48,7 @@ load_env_file()
 
 from fastmcp import FastMCP
 from tools import flight_search_tools
+from tools import date_tools
 
 
 def get_transport_config():
@@ -59,7 +60,7 @@ def get_transport_config():
     """
     # Default configuration
     config = {
-        'transport': 'stdio',  # Default to stdio for backward compatibility
+        'transport': 'sse',  # Default to SSE mode
         'host': '127.0.0.1',
         'port': 8000,
         'path': '/mcp',
@@ -210,14 +211,21 @@ def register_tools():
     
     logger.info("开始注册MCP工具...")
     
-    # Flight real-time dynamics search tool
+    # Flight route search tool
     @mcp.tool()
-    def searchFlightsByNumber(fnum: str, date: str):
-        """航班实时动态查询 - 根据航班号及航班起飞日期查询航班详细信息和实时动态"""
-        logger.debug(f"调用航班查询工具: fnum={fnum}, date={date}")
-        return flight_search_tools.searchFlightsByNumber(fnum, date)
+    def searchFlightRoutes(departure_city: str, destination_city: str, departure_date: str):
+        """航班路线查询 - 根据出发地、目的地和出发日期查询可用航班信息"""
+        logger.debug(f"调用航班路线查询工具: departure_city={departure_city}, destination_city={destination_city}, departure_date={departure_date}")
+        return flight_search_tools.searchFlightRoutes(departure_city, destination_city, departure_date)
     
-    logger.info("MCP工具注册完成 - 已注册工具: searchFlightsByNumber")
+    # Date tools
+    @mcp.tool()
+    def getCurrentDate():
+        """获取当前日期 - 返回格式为 yyyy-MM-dd 的当前日期字符串"""
+        logger.debug("调用获取当前日期工具")
+        return date_tools.getCurrentDate()
+    
+    logger.info("MCP工具注册完成 - 已注册工具: searchFlightRoutes, getCurrentDate")
 
 
 def run_server():

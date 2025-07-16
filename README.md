@@ -22,6 +22,16 @@ Flight Ticket MCP Server 实现了供航空机票相关查询操作的工具和�
 - 天气预报
 - 联系电话信息
 
+### 航班路线查询
+- 根据出发地、目的地和出发日期查询可用航班
+- 支持282个国内城市和机场代码
+- 智能城市名称解析（支持城市名、机场代码、完整格式）
+- 实时航班价格和航班时刻信息
+- 航空公司和机型信息
+- 航站楼和登机口信息
+- 价格统计和航空公司分布
+- 格式化输出结果
+
 ## 技术架构
 
 ### 核心模块 (Core)
@@ -39,8 +49,8 @@ Flight Ticket MCP Server 实现了供航空机票相关查询操作的工具和�
 
 本服务器支持三种传输协议：
 
-1. **stdio** - 标准输入输出（默认，适用于Claude Desktop）
-2. **sse** - Server-Sent Events（适用于Web应用）
+1. **sse** - Server-Sent Events（默认，适用于Web应用）
+2. **stdio** - 标准输入输出（适用于Claude Desktop）
 3. **streamable-http** - 可流式HTTP（适用于HTTP客户端）
 
 ## 安装
@@ -60,10 +70,10 @@ pip install -r requirements.txt
 
 ## 启动方式
 
-### 1. 直接启动（默认stdio模式）
+### 1. 直接启动（默认SSE模式）
 
 ```bash
-# 使用主启动文件
+# 使用主启动文件（默认启动SSE模式，监听127.0.0.1:8000）
 python flight_ticket_server.py
 
 # 或者直接运行main.py
@@ -84,23 +94,20 @@ python flight_ticket_server.py
 
 ### 3. 不同传输协议启动
 
-#### stdio模式（默认）
+#### SSE模式（默认）
 ```bash
+# 直接启动，使用默认SSE配置（127.0.0.1:8000）
 python flight_ticket_server.py
 ```
 
-#### SSE模式
+#### stdio模式
 ```bash
 # Windows
-set MCP_TRANSPORT=sse
-set MCP_HOST=127.0.0.1
-set MCP_PORT=8000
+set MCP_TRANSPORT=stdio
 python flight_ticket_server.py
 
 # Linux/macOS
-export MCP_TRANSPORT=sse
-export MCP_HOST=127.0.0.1
-export MCP_PORT=8000
+export MCP_TRANSPORT=stdio
 python flight_ticket_server.py
 ```
 
@@ -135,9 +142,10 @@ python flight_ticket_server.py
    打开 `.env` 文件，根据需要修改配置值：
    ```env
    # MCP服务器配置
-   MCP_TRANSPORT=stdio
-   MCP_HOST=localhost
-   MCP_PORT=8080
+   MCP_TRANSPORT=sse
+   MCP_HOST=127.0.0.1
+   MCP_PORT=8000
+   MCP_SSE_PATH=/sse
    
    # 日志配置
    LOG_LEVEL=INFO
@@ -146,7 +154,7 @@ python flight_ticket_server.py
    LOG_BACKUP_COUNT=5
    
    # 开发配置
-   DEBUG_MODE=false
+   MCP_DEBUG=false
    ```
 
 3. **配置说明**：
@@ -162,7 +170,7 @@ python flight_ticket_server.py
 
 | 变量名 | 描述 | 默认值 | 可选值 |
 |--------|------|--------|--------|
-| `MCP_TRANSPORT` | 传输协议类型 | `stdio` | `stdio`, `sse`, `streamable-http` |
+| `MCP_TRANSPORT` | 传输协议类型 | `sse` | `stdio`, `sse`, `streamable-http` |
 | `MCP_HOST` | 服务器主机地址 | `127.0.0.1` | 任何有效IP地址 |
 | `MCP_PORT` | 服务器端口 | `8000` | 1-65535 |
 | `MCP_PATH` | HTTP路径 | `/mcp` | 任何有效路径 |
@@ -179,12 +187,12 @@ python flight_ticket_server.py
 启动成功后，您会看到类似输出：
 
 ```
-Transport: stdio
+Transport: sse
 Logging enabled - logs will be saved to logs/ directory
 Flight Ticket MCP Server starting...
-Transport: stdio
+Transport: sse
 All tools registered successfully
-Starting stdio transport...
+Starting SSE transport on 127.0.0.1:8000/sse
 ```
 
 ### 6. 日志文件
@@ -211,7 +219,12 @@ Starting stdio transport...
   "mcpServers": {
     "flight-ticket-server": {
       "command": "python",
-      "args": ["D:\\FlightTicketMCPServer\\flight_ticket_server.py"]
+      "args": ["D:\\FlightTicketMCPServer\\flight_ticket_server.py"],
+      "env": {
+        "MCP_TRANSPORT": "sse",
+        "MCP_HOST": "127.0.0.1",
+        "MCP_PORT": "8000"
+      }
     }
   }
 }
@@ -225,19 +238,7 @@ Starting stdio transport...
 
 ### 不同传输协议的配置
 
-#### stdio模式（默认）
-```json
-{
-  "mcpServers": {
-    "flight-ticket-server": {
-      "command": "python",
-      "args": ["D:\\FlightTicketMCPServer\\flight_ticket_server.py"]
-    }
-  }
-}
-```
-
-#### SSE模式
+#### SSE模式（默认）
 ```json
 {
   "mcpServers": {
@@ -249,6 +250,21 @@ Starting stdio transport...
         "MCP_HOST": "127.0.0.1",
         "MCP_PORT": "8000",
         "MCP_SSE_PATH": "/sse"
+      }
+    }
+  }
+}
+```
+
+#### stdio模式
+```json
+{
+  "mcpServers": {
+    "flight-ticket-server": {
+      "command": "python",
+      "args": ["D:\\FlightTicketMCPServer\\flight_ticket_server.py"],
+      "env": {
+        "MCP_TRANSPORT": "stdio"
       }
     }
   }
@@ -276,9 +292,17 @@ Starting stdio transport...
 ### 示例操作
 
 配置完成后，您可以要求Claude执行以下操作：
+
+#### 航班实时动态查询
 - "查询CA3401航班2024年6月12日的实时动态"
-- "查询MU5678航班今天的详细信息"
+- "查询MU5678航班今天的详细信息"  
 - "查看CZ1234航班明天的起飞时间和航站楼信息"
+
+#### 航班路线查询
+- "查询重庆到广州明天的航班"
+- "搜索上海到北京后天的所有航班"
+- "查看深圳飞成都2024年7月20日的航班价格"
+- "北京到三亚的航班有哪些选择"
 
 ## API参考
 
@@ -302,6 +326,28 @@ searchFlightsByNumber(fnum, date)  # 根据航班号和日期查询航班详细�
 - 餐食和行李托运信息
 - 天气预报
 - 联系电话
+
+### 航班路线查询
+```python
+searchFlightRoutes(departure_city, destination_city, departure_date)  # 根据出发地、目的地和日期查询可用航班
+```
+
+输入参数：
+- `departure_city`: 出发城市名称或机场代码 (如: "重庆", "CKG", "重庆(CKG)")
+- `destination_city`: 目的地城市名称或机场代码 (如: "广州", "CAN", "广州(CAN)")
+- `departure_date`: 出发日期 (YYYY-MM-DD格式)
+
+输出信息：
+- 航班列表（包含航班号、航空公司、起飞到达时间、机场、航站楼、价格）
+- 价格统计（最低价、最高价、平均价）
+- 航空公司分布统计
+- 格式化的查询结果输出
+- 支持的城市：282个国内城市和机场
+
+支持的城市格式：
+- 城市名：上海、北京、重庆、广州等
+- 机场代码：SHA、BJS、CKG、CAN等
+- 完整格式：上海(SHA)、北京(BJS)等
 
 ## 开发
 
