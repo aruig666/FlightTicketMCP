@@ -63,6 +63,13 @@ class Flight(BaseModel):
     services: Dict[str, Any] = Field(default={}, description="服务信息")
     status: str = Field(default="scheduled", description="航班状态")
 
+class FlightTransfer(BaseModel):
+    '''航班中转信息模型'''
+    transfer_id: str = Field(..., description="中转ID")
+    first_flight: Flight = Field(..., description="航班信息")
+    second_flight: Flight = Field(..., description="中转航班信息")
+    transfer_time: float = Field(..., description="中转时间（小时）")
+    
 
 class FlightSearchCriteria(BaseModel):
     """航班搜索条件模型"""
