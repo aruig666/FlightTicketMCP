@@ -113,52 +113,197 @@ class FlightRouteSearcher:
             # 访问页面
             self.page.get(search_url)
             logger.info("页面加载完成，等待内容渲染...")
-            
-            # 等待页面加载
-            time.sleep(3)
-            
+            # 智能滚动加载更多内容
+            self._intelligent_scroll_for_content()
+
+            # 智能等待页面加载完成
+            self._wait_for_page_ready()
+
+            # 等待关键元素出现
+            self._wait_for_flight_content()
+
+
+
+
             # 解析航班信息
             flights = self._parse_flights()
-            
+
             logger.info(f"搜索完成，找到 {len(flights)} 条航班信息")
             return flights
-            
+
         except Exception as e:
             logger.error(f"搜索航班失败: {str(e)}", exc_info=True)
             return []
-    
+
+    def _intelligent_scroll_for_content(self):
+        """智能滚动以加载更多航班内容"""
+        print("🔄 智能滚动加载航班内容...")
+
+        try:
+            # 先向下滚动几次，加载初始内容
+            scroll_distances = [500, 800, 1200]
+
+            for i, distance in enumerate(scroll_distances, 1):
+                self.page.scroll(distance)
+                print(f"📜 第{i}次向下滚动 {distance}px")
+                time.sleep(1.5)  # 等待内容加载
+
+                # 检查是否有新的航班元素加载出来
+                flight_elements = self.page.eles('css:.flight-item', timeout=1)
+                print(f"   当前页面航班元素数量：{len(flight_elements)}")
+
+            # 滚动回到顶部，确保能看到所有航班
+            print("🔝 滚动回到页面顶部")
+            self.page.scroll(-2000)  # 向上滚动回到顶部
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"⚠️ 智能滚动过程中出错：{e}")
+    def _wait_for_flight_content(self, timeout=30):
+        """等待航班内容加载"""
+        print("⏳ 等待航班内容加载...")
+
+        # 方法1：等待航班容器出现
+        flight_container = self.page.ele('css:.body-wrapper', timeout=timeout)
+        if flight_container:
+            print("✅ 找到航班容器")
+
+            # 方法2：等待航班列表出现
+            flight_items = self.page.ele('css:.flight-item', timeout=10)
+            if flight_items:
+                print("✅ 航班列表加载完成")
+            else:
+                print("⚠️ 等待航班列表超时，尝试其他解析方法...")
+
+                # 等待可能的加载指示器消失
+                self._wait_for_loading_complete()
+        else:
+            print("❌ 航班容器未找到")
+    def _wait_for_page_ready(self, timeout=30):
+        """智能等待页面完全加载"""
+        print("⏳ 等待页面完全加载...")
+
+        # 方法1：等待 document.readyState 为 complete
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            ready_state = self.page.run_js("return document.readyState")
+            if ready_state == "complete":
+                print("✅ 页面DOM加载完成")
+                break
+            time.sleep(0.5)
+        else:
+            print("⚠️ 页面加载超时，继续执行...")
+
+        # 方法2：等待jQuery加载完成（如果页面使用jQuery）
+        if self._wait_for_jquery_ready():
+            print("✅ jQuery加载完成")
+
+        # 方法3：等待Ajax请求完成
+        if self._wait_for_ajax_complete():
+            print("✅ Ajax请求完成")
+
+    def _wait_for_ajax_complete(self, timeout=10):
+        """等待Ajax请求完成"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                # 检查是否有活跃的Ajax请求
+                ajax_complete = self.page.run_js("""
+                    if (typeof XMLHttpRequest !== 'undefined') {
+                        return XMLHttpRequest.active === 0 || XMLHttpRequest.active === undefined;
+                    }
+                    return true;
+                """)
+                if ajax_complete:
+                    return True
+            except:
+                pass
+            time.sleep(0.2)
+        return False
+
+    def _wait_for_jquery_ready(self, timeout=10):
+        """等待jQuery加载完成"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                jquery_active = self.page.run_js("return typeof jQuery !== 'undefined' && jQuery.active === 0")
+                if jquery_active:
+                    return True
+            except:
+                pass
+            time.sleep(0.2)
+        return False
+    def _wait_for_loading_complete(self, timeout=15):
+        """等待加载指示器消失"""
+        print("⏳ 等待加载指示器消失...")
+
+        # 常见的加载指示器选择器
+        loading_selectors = [
+            '.loading',
+            '.spinner',
+            '.loader',
+            '#loading',
+            '[data-loading]',
+            '.fa-spinner',
+            '.loading-overlay'
+        ]
+
+        for selector in loading_selectors:
+            try:
+                # 等待加载指示器消失
+                start_time = time.time()
+                while time.time() - start_time < timeout:
+                    loader = self.page.ele(f'css:{selector}', timeout=1)
+                    if not loader:
+                        break
+                    time.sleep(0.5)
+                else:
+                    continue
+                print(f"✅ 加载指示器 {selector} 已消失")
+                break
+            except:
+                continue
+
     def _parse_flights(self) -> List[Dict[str, Any]]:
         """解析航班信息"""
         flights = []
-        
+
         try:
             # 查找航班容器
             flight_list = self.page.ele('css:.body-wrapper')
             if not flight_list:
                 logger.warning("未找到航班容器")
                 return []
-            
+
             # 查找航班项
             flight_containers = flight_list.eles('css:.flight-item')
             if not flight_containers:
                 logger.warning("未找到航班项")
                 return []
-            
+
             logger.info(f"找到 {len(flight_containers)} 个航班容器")
-            
-            for i, container in enumerate(flight_containers[:10]):  # 限制解析前10个
+
+            # 选取存在航班号的10个航班
+            valid_flights_count = 0
+            for i, container in enumerate(flight_containers):
+                if valid_flights_count >= 10:  # 已找到10个有效航班，停止搜索
+                    break
+
                 try:
                     flight_info = self._parse_flight_container(container, i + 1)
-                    if flight_info:
+                    if flight_info and flight_info.get('航班号') and flight_info.get('航班号') != '未知':
+                        # 只有当航班号存在且不是'未知'时才添加
                         flights.append(flight_info)
-                        logger.debug(f"成功解析航班 {i+1}: {flight_info.get('航班号', '未知')}")
+                        valid_flights_count += 1
+                        logger.debug(f"成功解析航班 {valid_flights_count}: {flight_info.get('航班号')}")
                     else:
-                        logger.debug(f"航班 {i+1} 解析失败")
-                        
+                        logger.debug(f"航班容器 {i+1} 无有效航班号，跳过")
+
                 except Exception as e:
                     logger.error(f"解析航班容器 {i+1} 出错: {str(e)}")
                     continue
-            
+
+            logger.info(f"成功找到 {valid_flights_count} 个有航班号的航班")
             return flights
             
         except Exception as e:
