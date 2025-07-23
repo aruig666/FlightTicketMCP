@@ -6,8 +6,10 @@ Tools - MCP工具模块
 
 from . import flight_search_tools
 from . import date_tools
+from . import flight_transfer_tools
 
 __all__ = [
     "flight_search_tools",
-    "date_tools"
+    "date_tools",
+    "flight_transfer_tools"
 ] 
