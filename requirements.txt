@@ -7,3 +7,4 @@ uvicorn>=0.23.0
 fastapi>=0.100.0
 DrissionPage>=4.0.0
 selenium>=4.0.0
+geopy>=2.3.0

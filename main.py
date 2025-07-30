@@ -49,7 +49,8 @@ load_env_file()
 from fastmcp import FastMCP
 from tools import flight_search_tools
 from tools import date_tools
-from tools import flight_transfer_tools 
+from tools import flight_transfer_tools
+from tools import weather_tools 
 
 
 def get_transport_config():
@@ -234,7 +235,20 @@ def register_tools():
         logger.debug(f"最短换乘时间: min_transfer_time={from_place},默认2小时 最长换乘时间：max_transfer_time={max_transfer_time}, 默认5小时")
         return flight_transfer_tools.getTransferFlightsByThreePlace(from_place, transfer_place, to_place, min_transfer_time, max_transfer_time)
 
-    logger.info("MCP工具注册完成 - 已注册工具: searchFlightRoutes, getCurrentDate")
+    # Weather query tools
+    @mcp.tool()
+    def getWeatherByLocation(latitude: float, longitude: float, start_date: str = None, end_date: str = None):
+        """天气信息查询 - 根据经纬度查询天气信息，使用Open-Meteo API。如果不提供日期，默认查询今天和明天的天气数据"""
+        logger.debug(f"调用天气查询工具: latitude={latitude}, longitude={longitude}, start_date={start_date}, end_date={end_date}")
+        return weather_tools.getWeatherByLocation(latitude, longitude, start_date, end_date)
+
+    @mcp.tool()
+    def getWeatherByCity(city_name: str, start_date: str = None, end_date: str = None):
+        """城市天气查询 - 根据城市名查询天气信息。支持武汉、北京、上海等主要城市。如果不提供日期，默认查询今天和明天的天气数据"""
+        logger.debug(f"调用城市天气查询工具: city_name={city_name}, start_date={start_date}, end_date={end_date}")
+        return weather_tools.getWeatherByCity(city_name, start_date, end_date)
+
+    logger.info("MCP工具注册完成 - 已注册工具: searchFlightRoutes, getCurrentDate, getTransferFlightsByThreePlace, getWeatherByLocation, getWeatherByCity")
 
 
 def run_server():
