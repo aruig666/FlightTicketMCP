@@ -122,6 +122,13 @@ def getWeatherByLocation(latitude: float, longitude: float, start_date: str = No
             weather_data = response.json()
             logger.debug(f"API响应数据: {json.dumps(weather_data, indent=2, ensure_ascii=False)}")
             
+            # 调试：检查温度数据质量
+            if "hourly" in weather_data and "temperature_2m" in weather_data["hourly"]:
+                temps = weather_data["hourly"]["temperature_2m"]
+                none_count = sum(1 for temp in temps if temp is None)
+                valid_count = len(temps) - none_count
+                logger.debug(f"温度数据质量检查: 总数据点={len(temps)}, 有效数据点={valid_count}, None值数量={none_count}")
+            
             # 格式化结果
             result = {
                 "status": "success",
@@ -142,12 +149,23 @@ def getWeatherByLocation(latitude: float, longitude: float, start_date: str = No
             if "hourly" in weather_data and "temperature_2m" in weather_data["hourly"]:
                 temperatures = weather_data["hourly"]["temperature_2m"]
                 if temperatures:
-                    result["temperature_statistics"] = {
-                        "min_temperature": min(temperatures),
-                        "max_temperature": max(temperatures),
-                        "avg_temperature": round(sum(temperatures) / len(temperatures), 1),
-                        "data_points": len(temperatures)
-                    }
+                    # 过滤掉None值
+                    valid_temperatures = [temp for temp in temperatures if temp is not None]
+                    if valid_temperatures:
+                        result["temperature_statistics"] = {
+                            "min_temperature": min(valid_temperatures),
+                            "max_temperature": max(valid_temperatures),
+                            "avg_temperature": round(sum(valid_temperatures) / len(valid_temperatures), 1),
+                            "data_points": len(temperatures),
+                            "valid_data_points": len(valid_temperatures)
+                        }
+                    else:
+                        logger.warning("所有温度数据都为None值")
+                        result["temperature_statistics"] = {
+                            "error": "无有效温度数据",
+                            "data_points": len(temperatures),
+                            "valid_data_points": 0
+                        }
             
             logger.info(f"天气查询成功: 纬度={latitude}, 经度={longitude}")
             return result
@@ -228,17 +246,22 @@ def _format_weather_result(weather_data: Dict[str, Any], latitude: float, longit
                     output.append(f"📆 {date}")
                     
                     # 计算当日统计
-                    day_temps = [temp for _, temp in hourly_temps]
+                    day_temps = [temp for _, temp in hourly_temps if temp is not None]
                     if day_temps:
                         min_temp = min(day_temps)
                         max_temp = max(day_temps)
                         avg_temp = sum(day_temps) / len(day_temps)
                         output.append(f"    🌡️ 温度范围: {min_temp:.1f}°C ~ {max_temp:.1f}°C (平均: {avg_temp:.1f}°C)")
+                    else:
+                        output.append(f"    ❌ 当日无有效温度数据")
                     
                     # 显示部分小时数据（每4小时一次）
                     sample_data = hourly_temps[::4]  # 每4小时取一个样本
                     for hour, temp in sample_data[:6]:  # 最多显示6个时间点
-                        output.append(f"    {hour}: {temp}°C")
+                        if temp is not None:
+                            output.append(f"    {hour}: {temp}°C")
+                        else:
+                            output.append(f"    {hour}: 无数据")
                     
                     output.append("")
                 
