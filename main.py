@@ -228,11 +228,11 @@ def register_tools():
 
     # Flight transfer search tools
     @mcp.tool()
-    def getTransferFlightsByThreePlace(from_place: str="北京", transfer_place: str="香港", to_place: str="纽约",min_transfer_time: float = 2.0, max_transfer_time: float = 5.0):
-        """航班中转路线查询 - 根据出发地、中转地、目的地、最小转机时间、最大转机时间查询中转航班信息，最小转机时间默认为2小时，最大转机时间默认为5小时"""
-        logger.debug(f"调用航班中转查询工具：: from_place={from_place}, transfer_place={transfer_place}, to_place={to_place}")
+    def getTransferFlightsByThreePlace(from_place: str, transfer_place: str, to_place: str, departure_date: str, min_transfer_time: float = 2.0, max_transfer_time: float = 5.0):
+        """航班中转路线查询 - 根据出发地、中转地、目的地、出发日期、最小转机时间、最大转机时间查询中转航班信息，最小转机时间默认为2小时，最大转机时间默认为5小时"""
+        logger.debug(f"调用航班中转查询工具：: from_place={from_place}, transfer_place={transfer_place}, to_place={to_place}，departure_date={departure_date}")
         logger.debug(f"最短换乘时间: min_transfer_time={from_place},默认2小时 最长换乘时间：max_transfer_time={max_transfer_time}, 默认5小时")
-        return flight_transfer_tools.getTransferFlightsByThreePlace(from_place, transfer_place, to_place, min_transfer_time, max_transfer_time)
+        return flight_transfer_tools.getTransferFligriqihtsByThreePlace(from_place, transfer_place, to_place,departure_date, min_transfer_time, max_transfer_time)
 
     logger.info("MCP工具注册完成 - 已注册工具: searchFlightRoutes, getCurrentDate")
 
