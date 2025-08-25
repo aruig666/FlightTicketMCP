@@ -18,7 +18,7 @@ from core.flights import FlightSchedule, FlightPrice, Flight, SeatConfiguration,
 logger = logging.getLogger(__name__)
 
 
-def getTransferFlightsByThreePlace(from_place: str="北京", transfer_place: str="香港", to_place: str="纽约", min_transfer_time: float = 2.0,
+def getTransferFlightsByThreePlace(from_place: str, transfer_place: str, to_place: str,departure_date: str, min_transfer_time: float = 2.0,
                                 max_transfer_time: float = 5.0) -> List[FlightTransfer]:
     """
    查询从出发地通过中转地到目的地的联程航班信息。
@@ -69,25 +69,14 @@ def getTransferFlightsByThreePlace(from_place: str="北京", transfer_place: str
                         transfer_id=f"{index}",
                         first_flight=trip1,
                         second_flight=trip2,
+                        departure_date=departure_date,
                         transfer_time=round((departure_time - arrival_time).total_seconds() / 3600,3)
                     )
                     index += 1
                     logger.info(f"添加中转航班: {transfer.first_flight.flight_number} -> {transfer.second_flight.flight_number}, 中转时间: {transfer.transfer_time}小时")
                     select_trips.append(transfer)
 
-        # results = []
-        # for trip1, trip2 in select_trips:
-        #     line = (f"{from_place} -- {transfer_place} (中转) -- {to_place}\n"
-        #             f"- {trip1.flight_number} {trip1.origin} {trip1.schedule.departure_time} -- {trip1.destination} {trip1.schedule.arrival_time} \n"
-        #             f"- {trip2.flight_number} {trip2.origin} {trip2.schedule.departure_time} -- {trip2.destination} {trip2.schedule.arrival_time} \n")
-            # print(line)
-            # results.append(line)
-        # print(len(results), results)
-        # logger.info(f"查询到 {len(results)} 条中转航班信息")
-        # logger.info(f"查询结果: {results}")
-        # return results
         logger.info(f"查询到 {len(select_trips)} 条中转航班信息")
-        # logger.info(f"查询结果: {select_trips}")
         return select_trips
     except Exception as e:
         logger.warning(f"查询中转航班信息失败：{from_place}-{transfer_place}-{to_place}, 错误: {str(e)}", exc_info=True)
