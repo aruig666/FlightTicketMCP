@@ -11,7 +11,7 @@ Flight Ticket MCP Server - 航空机票预订和管理服务器
 作者: Your Name
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 

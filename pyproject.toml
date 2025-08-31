@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "flight-ticket-mcp-server"
-version = "1.0.0"
+version = "1.0.1"
 description = "一个基于模型上下文协议(MCP)的航空机票查询和管理服务器"
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
@@ -33,6 +33,8 @@ dependencies = [
     "pytz>=2023.3",
     "uvicorn>=0.23.0",
     "fastapi>=0.100.0",
+    "selenium>=4.0.0",
+    "geopy>=2.3.0",
 ]
 
 [project.optional-dependencies]

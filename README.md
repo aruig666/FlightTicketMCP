@@ -107,16 +107,62 @@ Flight Ticket MCP Server 实现了供航空机票相关查询操作的工具和�
 
 ### 前置要求
 - Python 3.11 或更高版本
-- pip 包管理器
+- pip 包管理器（或 uvx 工具）
 
-### 基本安装
+### 方式一：从PyPI安装（推荐）
+
+```bash
+# 使用pip安装
+pip install flight-ticket-mcp-server
+
+# 或使用uvx直接运行（无需安装）
+uvx flight-ticket-mcp-server
+
+# 或使用uvx安装后运行
+uvx --install flight-ticket-mcp-server
+```
+
+### 方式二：本地开发安装
 ```bash
 # 克隆或下载项目
-cd FlightTicketMCPServer
+cd FlightTicketMCP
 
 # 安装依赖
 pip install -r requirements.txt
+
+# 或从本地源码安装
+pip install -e .
 ```
+
+### uvx 使用说明
+
+uvx 是一个现代的Python包运行工具，可以直接运行PyPI包而无需先安装到系统环境：
+
+```bash
+# 安装uv（包含uvx工具）
+pip install uv
+
+# 直接运行MCP服务器（无需安装）
+uvx flight-ticket-mcp-server
+
+# 使用最新版本（推荐）
+uvx flight-ticket-mcp-server@latest
+
+# 带参数运行
+uvx flight-ticket-mcp-server --help
+
+# 指定版本运行
+uvx flight-ticket-mcp-server==1.0.1
+
+# 强制重新安装最新版本
+uvx flight-ticket-mcp-server@latest --help
+```
+
+**uvx 的优势：**
+- 🚀 无需污染全局Python环境
+- 📦 自动管理虚拟环境
+- 🔄 支持直接运行最新版本
+- 🛡️ 隔离依赖，避免冲突
 
 ## 启动方式
 
@@ -260,31 +306,73 @@ Starting SSE transport on 127.0.0.1:8000/sse
 
 ## 使用方法
 
-### 与Claude Desktop配置
+### MCP客户端配置
 
-1. 安装完成后，将服务器添加到Claude Desktop配置文件中：
+#### 方式一：使用uvx（推荐）
+
+使用uvx运行MCP服务器，无需预先安装，简洁优雅：
+
+```json
+{
+  "mcpServers": {
+    "flight-ticket-server": {
+      "command": "uvx",
+      "args": ["flight-ticket-mcp-server@latest"]
+    }
+  }
+}
+```
+
+**uvx配置的优势：**
+- 🚀 无需预先安装包
+- 📦 自动管理依赖和虚拟环境
+- 🔄 始终运行最新版本
+- 🛡️ 隔离环境，避免冲突
+
+#### 方式二：使用pip安装后运行
+
+如果已通过pip安装，可以直接使用命令行工具：
+
+```json
+{
+  "mcpServers": {
+    "flight-ticket-server": {
+      "command": "flight-ticket-mcp-server"
+    }
+  }
+}
+```
+
+#### 方式三：本地开发版本
+
+对于本地开发或自定义版本：
 
 ```json
 {
   "mcpServers": {
     "flight-ticket-server": {
       "command": "python",
-      "args": ["D:\\FlightTicketMCPServer\\flight_ticket_server.py"],
+      "args": ["D:\\FlightTicketMCP\\flight_ticket_server.py"],
       "env": {
-        "MCP_TRANSPORT": "sse",
-        "MCP_HOST": "127.0.0.1",
-        "MCP_PORT": "8000"
+        "MCP_TRANSPORT": "stdio"
       }
     }
   }
 }
 ```
 
-2. 配置文件位置：
-   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+#### 配置文件位置
 
-3. 重启Claude Desktop以加载配置。
+将上述配置添加到Claude Desktop配置文件中：
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/claude/claude_desktop_config.json`
+
+#### 应用配置
+
+1. 保存配置文件
+2. 重启Claude Desktop
+3. 在Claude Desktop中应该能看到flight-ticket-server连接成功
 
 ### 不同传输协议的配置
 
@@ -338,6 +426,82 @@ Starting SSE transport on 127.0.0.1:8000/sse
   }
 }
 ```
+
+### MCP客户端测试
+
+#### 测试连接
+
+配置完成后，可以通过以下方式测试MCP服务器连接：
+
+1. **Claude Desktop测试**：
+   - 重启Claude Desktop
+   - 检查状态栏是否显示"flight-ticket-server"连接成功
+   - 在对话中尝试询问："你现在有哪些工具可用？"
+
+2. **命令行测试**：
+   ```bash
+   # 使用uvx直接测试
+   uvx flight-ticket-mcp-server --help
+   
+   # 或使用已安装的包测试
+   flight-ticket-mcp-server --help
+   
+   # 测试模块化运行
+   python -m flight_ticket_mcp_server --help
+   ```
+
+3. **MCP协议测试**：
+   ```bash
+   # 使用MCP inspector工具测试（如果安装了）
+   npx @modelcontextprotocol/inspector uvx flight-ticket-mcp-server
+   ```
+
+#### 验证工具注册
+
+成功连接后，您的Claude应该能够访问以下工具：
+
+- ✈️ **searchFlightRoutes** - 航班路线查询
+- 📅 **getCurrentDate** - 获取当前日期  
+- 🔄 **getTransferFlightsByThreePlace** - 航班中转查询
+- 🌤️ **getWeatherByLocation** - 经纬度天气查询
+- 🏙️ **getWeatherByCity** - 城市天气查询
+- ℹ️ **getFlightInfo** - 航班信息查询
+- 📡 **getFlightStatus** - 航班实时状态查询
+- 🛫 **getAirportFlights** - 机场周边航班查询
+- 🗺️ **getFlightsInArea** - 区域航班查询
+- 📊 **trackMultipleFlights** - 批量航班跟踪
+
+#### 故障排除
+
+如果连接失败，请检查：
+
+1. **uvx配置**：
+   ```bash
+   # 检查uv/uvx是否安装
+   uvx --version
+   
+   # 手动测试包运行
+   uvx flight-ticket-mcp-server@latest
+   ```
+
+2. **包版本**：
+   ```bash
+   # 强制使用最新版本
+   uvx flight-ticket-mcp-server@latest
+   
+   # 清除uvx缓存后重试
+   uv cache clean
+   uvx flight-ticket-mcp-server@latest
+   ```
+
+3. **配置文件语法**：
+   - 确保JSON格式正确
+   - 检查引号和括号匹配
+   - 验证配置文件路径
+
+4. **日志检查**：
+   - 查看Claude Desktop的日志输出
+   - 检查服务器启动日志
 
 ### 示例操作
 

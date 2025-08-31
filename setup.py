@@ -34,7 +34,7 @@ def read_requirements():
 
 setup(
     name="flight-ticket-mcp-server",
-    version="1.0.0",
+    version="1.0.1",
     author="Your Name",
     author_email="your.email@example.com",
     description="一个基于模型上下文协议(MCP)的航空机票查询和管理服务器",
