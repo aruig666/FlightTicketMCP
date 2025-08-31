@@ -51,7 +51,7 @@ from tools import flight_search_tools
 from tools import date_tools
 from tools import flight_transfer_tools
 from tools import weather_tools
-from tools import simple_opensky_tools 
+from tools import flight_info_tools 
 
 
 def get_transport_config():
@@ -249,32 +249,14 @@ def register_tools():
         logger.debug(f"调用城市天气查询工具: city_name={city_name}, start_date={start_date}, end_date={end_date}")
         return weather_tools.getWeatherByCity(city_name, start_date, end_date)
 
-    # OpenSky Flight tracking tools (简化版)
+    # Flight info query tool
     @mcp.tool()
-    def getFlightStatus(flight_number: str, date: str = None):
-        """航班实时状态查询 - 使用OpenSky Network查询航班实时位置和状态。flight_number为航班呼号(如CCA1234)，date参数无效(仅支持实时数据)"""
-        logger.debug(f"调用OpenSky航班状态查询: flight_number={flight_number}, date={date}")
-        return simple_opensky_tools.getFlightStatus(flight_number, date)
+    def getFlightInfo(flight_number: str):
+        """航班信息查询 - 根据航班号查询详细的航班信息，包括航班状态、座位配置、价格、天气等"""
+        logger.debug(f"调用航班信息查询工具: flight_number={flight_number}")
+        return flight_info_tools.getFlightInfo(flight_number)
 
-    @mcp.tool()
-    def getAirportFlights(airport_code: str, flight_type: str = "departure"):
-        """机场周边航班查询 - 查询指定机场周边30公里范围内的所有航班。支持主要机场代码如PEK、PVG、CAN等"""
-        logger.debug(f"调用机场周边航班查询: airport_code={airport_code}, flight_type={flight_type}")
-        return simple_opensky_tools.getAirportFlights(airport_code, flight_type)
-
-    @mcp.tool()
-    def getFlightsInArea(min_lat: float, max_lat: float, min_lon: float, max_lon: float):
-        """区域航班查询 - 查询指定地理区域内的所有航班。参数为边界框坐标(最小纬度,最大纬度,最小经度,最大经度)"""
-        logger.debug(f"调用区域航班查询: bbox=({min_lat},{max_lat},{min_lon},{max_lon})")
-        return simple_opensky_tools.getFlightsInArea(min_lat, max_lat, min_lon, max_lon)
-
-    @mcp.tool()
-    def trackMultipleFlights(flight_numbers: list, date: str = None):
-        """批量航班跟踪 - 同时查询多个航班的实时状态。flight_numbers为航班呼号列表，如['CCA1234','CSN5678']"""
-        logger.debug(f"调用批量航班跟踪: flight_numbers={flight_numbers}, date={date}")
-        return simple_opensky_tools.trackMultipleFlights(flight_numbers, date)
-
-    logger.info("MCP工具注册完成 - 已注册工具: searchFlightRoutes, getCurrentDate, getTransferFlightsByThreePlace, getWeatherByLocation, getWeatherByCity, getFlightStatus, getAirportFlights, getFlightsInArea, trackMultipleFlights")
+    logger.info("MCP工具注册完成 - 已注册工具: searchFlightRoutes, getCurrentDate, getTransferFlightsByThreePlace, getWeatherByLocation, getWeatherByCity, getFlightInfo")
 
 
 def run_server():
