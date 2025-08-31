@@ -47,12 +47,12 @@ def load_env_file(env_file_path='.env'):
 load_env_file()
 
 from fastmcp import FastMCP
-from tools import flight_search_tools
-from tools import date_tools
-from tools import flight_transfer_tools
-from tools import weather_tools
-from tools import flight_info_tools
-from tools import simple_opensky_tools 
+from .tools import flight_search_tools
+from .tools import date_tools
+from .tools import flight_transfer_tools
+from .tools import weather_tools
+from .tools import flight_info_tools
+from .tools import simple_opensky_tools 
 
 
 def get_transport_config():

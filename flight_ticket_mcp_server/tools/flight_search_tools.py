@@ -29,13 +29,9 @@ except ImportError:
 try:
     from ..utils.cities_dict import get_airport_code, get_city_name
 except ImportError:
-    try:
-        # 如果相对导入失败，尝试直接导入
-        from utils.cities_dict import get_airport_code, get_city_name
-    except ImportError:
-        logger.warning("城市字典未找到，航班路线查询功能将不可用")
-        get_airport_code = None
-        get_city_name = None
+    logger.warning("城市字典未找到，航班路线查询功能将不可用")
+    get_airport_code = None
+    get_city_name = None
 
 
 

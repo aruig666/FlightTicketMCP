@@ -12,7 +12,7 @@ from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 import time
 
-from core.flights import FlightSchedule, FlightPrice, Flight, SeatConfiguration, FlightTransfer
+from ..core.flights import FlightSchedule, FlightPrice, Flight, SeatConfiguration, FlightTransfer
 
 # 初始化日志器
 logger = logging.getLogger(__name__)

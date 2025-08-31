@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "flight-ticket-mcp-server"
 version = "1.0.0"
-description = "一个基于模型上下文协议(MCP)的航空机票预订和管理服务器"
+description = "一个基于模型上下文协议(MCP)的航空机票查询和管理服务器"
 authors = [
     {name = "Your Name", email = "your.email@example.com"}
 ]
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
-keywords = ["mcp", "flight", "ticket", "booking", "ai"]
+keywords = ["mcp", "flight", "ticket", "search", "ai", "fastmcp"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
 
 dependencies = [
@@ -41,6 +43,8 @@ dev = [
     "isort>=5.12.0",
     "flake8>=6.0.0",
     "mypy>=1.0.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
 ]
 
 [project.urls]
@@ -50,11 +54,19 @@ Documentation = "https://github.com/yourusername/flight-ticket-mcp-server#readme
 Issues = "https://github.com/yourusername/flight-ticket-mcp-server/issues"
 
 [project.scripts]
-flight-ticket-server = "flight_ticket_server.main:main"
+flight-ticket-mcp-server = "flight_ticket_mcp_server:main"
+
+[project.entry-points."console_scripts"]
+flight-ticket-server = "flight_ticket_mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["flight_ticket_server*"]
+include = ["flight_ticket_mcp_server*", "core*", "tools*", "utils*"]
+exclude = ["tests*", "logs*"]
+
+[tool.setuptools.package-data]
+"flight_ticket_mcp_server" = ["*.json", "*.txt"]
+"*" = ["*.json", "*.txt", "*.md"]
 
 [tool.black]
 line-length = 100
