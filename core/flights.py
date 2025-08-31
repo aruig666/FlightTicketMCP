@@ -68,6 +68,7 @@ class FlightTransfer(BaseModel):
     transfer_id: str = Field(..., description="中转ID")
     first_flight: Flight = Field(..., description="航班信息")
     second_flight: Flight = Field(..., description="中转航班信息")
+    departure_date:str=Field(..., description="出发日期")
     transfer_time: float = Field(..., description="中转时间（小时）")
     
 
