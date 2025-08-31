@@ -36,19 +36,21 @@ Flight Ticket MCP Server 实现了供航空机票相关查询操作的工具和�
 - 自动处理时区和日期范围
 - 支持武汉、北京、上海等主要城市预设
 
+### 航班信息查询
+- 根据航班号查询详细的航班信息
+- 包含航班状态、座位配置、价格信息
+- 提供天气信息（出发地和目的地）
+- 显示航班基本信息（航空公司、机型、航线类型）
+- 详细的航站楼、登机口信息
+- 实时动态状态（准时、延误、登机、飞行中等）
+- 座位价格和可用性信息
+- 附加服务信息（餐食、WiFi、娱乐系统等）
+
 ### 日期时间工具  
 - 获取当前系统日期（YYYY-MM-DD格式）
 - 获取当前系统日期时间（YYYY-MM-DD HH:mm:ss格式）
 - 为其他功能提供标准化的日期时间支持
 - 自动处理时区和格式转换
-
-### 实时航班跟踪 (OpenSky Network)
-- **实时航班状态查询**：基于OpenSky Network的全球航班实时追踪
-- **航班呼号搜索**：支持通过航班呼号查询实时位置和状态
-- **机场周边航班**：查询指定机场20公里范围内的所有航班
-- **区域航班查询**：查询任意地理区域内的航班分布
-- **批量航班跟踪**：同时监控多个航班的实时状态
-- **免费数据源**：使用OpenSky Network免费API，无需密钥注册
 
 ### 数据处理与智能化
 - **智能城市解析**：支持多种城市输入格式（城市名、机场代码、完整格式）
@@ -67,9 +69,9 @@ Flight Ticket MCP Server 实现了供航空机票相关查询操作的工具和�
 ### 工具模块 (Tools)
 - **航班搜索工具** (`flight_search_tools.py`) - 航班路线查询功能
 - **航班中转工具** (`flight_transfer_tools.py`) - 多段航程和中转查询  
+- **航班信息工具** (`flight_info_tools.py`) - 根据航班号查询详细信息
 - **天气查询工具** (`weather_tools.py`) - 基于经纬度和城市的天气查询
 - **日期时间工具** (`date_tools.py`) - 日期时间获取和处理
-- **实时航班跟踪工具** (`simple_opensky_tools.py`) - 基于OpenSky Network的实时航班追踪
 
 ### 实用工具 (Utils)
 - **城市字典** (`cities_dict.py`) - 282个城市和机场代码映射
@@ -100,13 +102,10 @@ Flight Ticket MCP Server 实现了供航空机票相关查询操作的工具和�
 ### 基本安装
 ```bash
 # 克隆或下载项目
-cd FlightTicketMCP
+cd FlightTicketMCPServer
 
 # 安装依赖
 pip install -r requirements.txt
-
-# 安装OpenSky Network API（实时航班跟踪）
-pip install python-opensky
 ```
 
 ## 启动方式
@@ -354,24 +353,23 @@ Starting SSE transport on 127.0.0.1:8000/sse
 - "武汉本周的天气预报"
 - "查询重庆2024年7月15日到7月17日的天气"
 
+#### 航班信息查询
+- "查询航班CA1234的详细信息"
+- "MU5678这个航班现在什么状态"
+- "帮我查看航班HU7890的座位和价格信息"
+- "CZ3691航班的登机口和航站楼信息"
+
 #### 日期时间查询
 - "今天是几号"
 - "现在的日期和时间是什么"
 - "帮我获取当前日期"
 
-#### 实时航班跟踪（OpenSky Network）
-- "查询中国国航CCA1234航班的实时状态"
-- "北京首都机场周边现在有哪些航班"
-- "查看上海浦东机场30公里范围内的航班"
-- "搜索所有中国国航(CCA)的实时航班"
-- "查询珠三角地区正在飞行的航班"
-- "帮我跟踪CCA1234和CSN5678两个航班的位置"
-
 #### 综合查询示例
 - "我要从成都飞北京，明天出发，顺便告诉我北京的天气"
 - "查询上海到广州的航班，还有广州的天气情况"
 - "帮我规划从重庆到东京的行程，需要中转，并查看目的地天气"
-- "查询CCA1234航班状态，还有北京首都机场的实时航班情况"
+- "查询CA1234航班信息，以及出发地和目的地的天气"
+- "我的航班是MU5678，帮我查看航班状态和座位情况"
 
 ## API参考
 
@@ -447,6 +445,33 @@ getWeatherByCity(city_name, start_date, end_date)
 - 日出日落时间
 - 紫外线指数
 
+### 航班信息查询
+```python
+getFlightInfo(flight_number)  # 根据航班号查询详细航班信息
+```
+
+输入参数：
+- `flight_number`: 航班号 (如: "CA1234", "MU5678", "CZ3691")
+
+输出信息：
+- 航班基本信息（航空公司、机型、航线类型）
+- 航线信息（出发和到达机场、航站楼、登机口）
+- 实时状态（准时、延误、登机、飞行中、已到达等）
+- 座位配置（经济舱、商务舱、头等舱座位数）
+- 价格信息（各舱位价格和可用性）
+- 天气信息（出发地和目的地当前天气）
+- 附加服务（值机柜台、行李额度、餐食、WiFi等）
+
+支持的航班号格式：
+- 中国国际航空：CA1234、CA8901
+- 中国东方航空：MU5678、MU2468
+- 中国南方航空：CZ3691、CZ1357
+- 海南航空：HU7890
+- 厦门航空：MF8123
+- 春秋航空：9C8765
+- 吉祥航空：HO1288
+- 国外航空：UA858、NH955 等
+
 ### 日期时间工具
 ```python
 getCurrentDate()  # 获取当前日期（YYYY-MM-DD格式）
@@ -455,125 +480,37 @@ getCurrentDate()  # 获取当前日期（YYYY-MM-DD格式）
 输出信息：
 - 当前系统日期字符串
 
-### 实时航班跟踪（OpenSky Network）
-
-#### 航班状态查询
-```python
-getFlightStatus(flight_number, date)  # 根据航班号查询实时状态
-```
-
-输入参数：
-- `flight_number`: 航班呼号或航空公司代码 (如: "CCA1234", "CCA", "CSN")
-- `date`: 日期参数（OpenSky仅支持实时数据，此参数被忽略）
-
-输出信息：
-- 匹配的航班列表
-- 实时位置（经度、纬度、高度）
-- 飞行状态（空中飞行、地面停留、滑行等）
-- 飞行速度（地面速度、垂直速度）
-- 航班基本信息（呼号、国家、真航迹角）
-
-#### 机场周边航班查询
-```python
-getAirportFlights(airport_code, flight_type)  # 查询机场周边航班
-```
-
-输入参数：
-- `airport_code`: 机场代码 (如: "PEK", "PVG", "CAN", "CTU", "SZX")
-- `flight_type`: 航班类型（兼容性参数，OpenSky返回所有航班）
-
-支持的机场（50+个中国主要机场）：
-
-**一线城市及直辖市**：
-- PEK: 北京首都国际机场, PKX: 北京大兴国际机场
-- PVG: 上海浦东国际机场, SHA: 上海虹桥国际机场  
-- CAN: 广州白云国际机场, SZX: 深圳宝安国际机场
-- CKG: 重庆江北国际机场, TSN: 天津滨海国际机场
-
-**省会城市及重要城市**：
-- CTU: 成都双流国际机场, TFU: 成都天府国际机场
-- KMG: 昆明长水国际机场, XIY: 西安咸阳国际机场
-- HGH: 杭州萧山国际机场, NKG: 南京禄口国际机场
-- WUH: 武汉天河国际机场, CSX: 长沙黄花国际机场
-- TAO: 青岛流亭国际机场, XMN: 厦门高崎国际机场
-- FOC: 福州长乐国际机场, NNG: 南宁吴圩国际机场
-- 以及其他30+个省会城市和重要城市机场
-
-**重要旅游城市**：
-- SYX: 三亚凤凰国际机场, HAK: 海口美兰国际机场
-- DLC: 大连周水子国际机场, YNT: 烟台蓬莱国际机场
-- HFE: 合肥新桥国际机场, WNZ: 温州龙湾国际机场
-- 以及更多旅游城市机场
-
-输出信息：
-- 机场坐标信息
-- 30公里范围内的所有航班
-- 航班状态分布统计
-- 详细的航班位置和速度信息
-
-#### 区域航班查询
-```python
-getFlightsInArea(min_lat, max_lat, min_lon, max_lon)  # 查询指定区域航班
-```
-
-输入参数：
-- `min_lat`: 最小纬度
-- `max_lat`: 最大纬度
-- `min_lon`: 最小经度
-- `max_lon`: 最大经度
-
-输出信息：
-- 边界框内的所有航班
-- 按国家统计的航班分布
-- 每架航班的详细实时信息
-
-#### 批量航班跟踪
-```python
-trackMultipleFlights(flight_numbers, date)  # 批量跟踪多个航班
-```
-
-输入参数：
-- `flight_numbers`: 航班号或航空公司代码列表 (如: ["CCA", "CSN", "CES"])
-- `date`: 日期参数（OpenSky仅支持实时数据）
-
-输出信息：
-- 每个查询的详细结果
-- 总航班统计信息
-- 成功查询的数量统计
-
-
 ## 开发
 
 ### 项目结构
 ```
-FlightTicketMCP/
-├── core/                   # 核心业务逻辑
-│   ├── __init__.py
-│   └── flights.py          # 航班数据模型
-├── tools/                  # MCP工具实现
-│   ├── __init__.py
-│   ├── date_tools.py       # 日期时间工具
-│   ├── flight_search_tools.py # 航班搜索工具
-│   ├── flight_transfer_tools.py # 航班中转工具
-│   ├── simple_opensky_tools.py # OpenSky实时航班追踪
-│   └── weather_tools.py    # 天气查询工具
-├── utils/                  # 实用工具函数
-│   ├── __init__.py
-│   ├── api_client.py       # HTTP请求客户端
-│   ├── cities_dict.py      # 城市机场代码映射
-│   ├── date_utils.py       # 日期处理工具
-│   └── validators.py       # 输入验证器
-├── examples/               # 示例和演示代码
-│   ├── opensky_demo.py     # OpenSky功能演示
-│   └── simple_opensky_demo.py # 简化版演示
-├── logs/                   # 日志文件目录
-├── main.py                 # MCP服务器主入口
-├── flight_ticket_server.py # 服务器启动脚本
-├── mcp-config.json         # MCP配置示例
-├── pyproject.toml          # 项目配置
-├── requirements.txt        # 项目依赖
-├── LICENSE                 # 开源协议
-└── README.md               # 项目文档
+FlightTicketMCPServer/
+├── flight_ticket_server/
+│   ├── core/              # 核心业务逻辑
+│   ├── tools/             # MCP工具实现
+│   ├── utils/             # 实用工具函数
+│   └── main.py            # 服务器入口点
+├── office_flight_ticket_server/  # 额外模块
+├── tests/                 # 测试文件
+├── logs/                  # 日志文件目录
+├── pyproject.toml         # 项目配置
+├── requirements.txt       # 项目依赖
+├── flight_ticket_server.py # 主启动文件
+├── mcp-config.json        # MCP配置示例
+└── README.md              # 项目文档
+```
+
+### 测试
+
+```bash
+# 运行所有测试
+python -m pytest tests/ -v
+
+# 运行基本功能测试
+python -m pytest tests/test_basic.py -v
+
+# 运行特定测试
+python -m pytest tests/test_basic.py::TestFlightSearch::test_searchFlightsByNumber -v
 ```
 
 ### 日志和调试
@@ -582,7 +519,30 @@ FlightTicketMCP/
 - 启用调试模式：设置 `MCP_DEBUG=true`
 - 查看实时日志：`tail -f logs/flight_server.log`
 
+## 故障排除
 
+### 常见问题
+
+1. **端口被占用**
+   ```bash
+   # 更改端口
+   set MCP_PORT=8001
+   python flight_ticket_server.py
+   ```
+
+2. **导入错误**
+   ```bash
+   # 确保在正确的目录
+   cd FlightTicketMCPServer/flight_ticket_server
+   python flight_ticket_server.py
+   ```
+
+3. **权限问题**
+   ```bash
+   # 检查文件权限
+   ls -la flight_ticket_server.py
+   chmod +x flight_ticket_server.py
+   ```
 
 ### 日志分析
 
